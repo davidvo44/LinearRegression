@@ -9,6 +9,7 @@ from newData import newData
 
 tetha0 = 0
 tetha1 = 0
+learningRate = 0.01
 graphOpen = False
 
 @click.command()
@@ -26,8 +27,7 @@ def main():
                 createGraph()
             elif choice == "Quit":
                 break
-            UpdateTheta0();
-            UpdateTheta1();
+            UpdateTheta1V2();
     except KeyboardInterrupt:
         print("\n...Leaving....");
     except click.exceptions.Abort:
@@ -41,7 +41,7 @@ def estimation():
     mileage = click.prompt("Enter Mileage", type = float);
     estimatePrice = mileage * tetha1 + tetha0;
     click.echo(click.style(f"\nEstimate Price for the car is: {estimatePrice}", fg='green'));
-    time.sleep(1.5);
+    time.sleep(1);
 
 def selectMenu():
     return inquirer.select(
@@ -53,20 +53,28 @@ def createGraph():
     try:
         global tetha0;
         global tetha1;
+
         data = pd.read_csv("db.csv");
-        plt.scatter(data['price'], data['km']);
+
+        x_points = data['km']
+        y_points = data['price']
+
+        x_lines = data['km']
+        click.echo(click.style(f"\nThetha1 is: {tetha1}, {tetha0}", fg='green'));
+        y_lines = tetha1 * x_lines + tetha0;
+
+        plt.figure(figsize=(8,5));   
+        plt.scatter(data['km'], data['price']);
+        plt.plot(x_lines, y_lines, color='red', linewidth=2);
+
         plt.title("Price/km Graph");
         plt.xlabel('km');
         plt.ylabel('price');
-        plt.magma();
-        plt.hist2d
-        x = data['price']
-        y = tetha1 * x + tetha0;
-        click.echo(click.style(f"\nThetha1 is: {tetha1},, {tetha0}", fg='green'));
-        plt.plot(x, y, color='red', linewidth=2)
+        
         plt.savefig("figure.png");
-        subprocess.run(["xdg-open", "figure.png"])
+        subprocess.run(["xdg-open", "figure.png"]);
         graphOpen = True
+        plt.close();
     except:
         click.echo("\nerror");
         return;
@@ -75,21 +83,86 @@ def UpdateTheta1():
     global tetha1;
     data = pd.read_csv("db.csv");
     sumXY = (data["price"] * data["km"]).sum();
-    sumX = data["price"].sum();
-    sumY = data["km"].sum();
-    sumXX = (data["price"] * data["price"]).sum();
-    linesNB = data["price"].count();
+    sumX = data["km"].sum();
+    sumY = data["price"].sum();
+    sumXX = (data["km"] * data["km"]).sum();
+    linesNB = data["km"].count();
+    if linesNB == 0:
+        return;
     tetha1 =  (linesNB * sumXY - sumX * sumY) / (linesNB * sumXX - (sumX * sumX));
 
-def UpdateTheta0() :
+def UpdateTheta0V2():
+    global tetha1;
+    global tetha0;
+    global learningRate;
+
+    data = pd.read_csv("db.csv");
+    linesNB = data["km"].count();
+
+    click.echo(click.style(f"\nYOOOO", fg='green'));
+
+    oldVal = tetha0;
+    sumMarginPrice = ((data["km"] * tetha1 + oldVal - data["price"])).sum();
+    tetha0 = oldVal - (learningRate * (1/linesNB) * sumMarginPrice);
+    click.echo(click.style(f"\nEstimate Price : {sumMarginPrice, tetha0}", fg='green'));
+
+# normalized_value = (value - min) / (max - min)
+
+def UpdateTheta1V2():
+    global tetha1;
+    global tetha0;
+    global learningRate;
+
+    data = pd.read_csv("db.csv");
+    linesNB = data["km"].count();
+    if linesNB < 2:
+        return;
+    km = data["km"];
+    price = data["price"];
+
+    normKm = (km - km.min()) / (km.max() - km.min());
+    normPrice = (price - price.min()) / (price.max() - price.min());
+    
+    oldVal0 = tetha0;
+    oldVal1 = tetha1;
+
+    tetha1 = oldVal1 * (km.max() - km.min()) / (price.max() - price.min());
+    tetha0 = (oldVal0 - price.min()) / (price.max() - price.min()) + oldVal1 * (km.min() / (km.max() - km.min()));
+    for i in range(1000000):
+        oldVal0 = tetha0;
+        oldVal1 = tetha1;
+
+        sumMarginPriceTheta0 = ((normKm * oldVal1 + oldVal0 - normPrice)).sum();
+        tetha0 = oldVal0 - (learningRate * (1/linesNB) * sumMarginPriceTheta0);
+
+        sumMarginPriceTheta1 = ((normKm * oldVal1 + oldVal0 - normPrice) * normKm).sum();
+        tetha1 = oldVal1 - (learningRate * (1/linesNB) * sumMarginPriceTheta1);
+
+        heyhey1 = (price.max() - price.min()) * tetha1 / (km.max() - km.min());
+        heyhey = price.min() + (price.max() - price.min()) * (tetha0 - tetha1 * km.min() / (km.max() - km.min()))
+        click.echo(click.style(f"\nEstimate Price : {tetha1 - oldVal1, tetha0 - oldVal0}", fg='green'));
+        if abs(tetha1 - oldVal1) < 0.001 and abs(tetha0 - oldVal0) < 0.001:
+            break;
+    oldVal0 = tetha0;
+    oldVal1 = tetha1;
+    tetha1 = (price.max() - price.min()) * oldVal1 / (km.max() - km.min());
+    tetha0 = price.min() + (price.max() - price.min()) * (oldVal0 - oldVal1 * km.min() / (km.max() - km.min()));
+
+# A = (maxPrice - minPrice) * theta1 / (maxKm - minKm)
+# B = minPrice + (maxPrice - minPrice) * (theta0 - theta1 * minKm / (maxKm - minKm))
+
+def UpdateTheta0():
     global tetha0;
     data = pd.read_csv("db.csv");
-    sumX = data["price"].sum();
-    sumY = data["km"].sum();
+    sumX = data["km"].sum();
+    sumY = data["price"].sum();
     linesNB = data["km"].count();
+    if linesNB == 0:
+        return;
     tetha0 = (sumY - tetha1 * sumX) / linesNB;
-    time.sleep(1.5);
+    time.sleep(1);
 
 
 if __name__ == '__main__':
     main()
+
