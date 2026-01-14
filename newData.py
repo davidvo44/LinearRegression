@@ -27,9 +27,12 @@ def uniqueData():
     if click.confirm(f"\nConfirmation Price: {price}, mileage: {mileage}"):
         try:
             d = {'km': mileage, 'price': price}
-            new_row = pd.DataFrame([d])
-            data = pd.read_csv("db.csv")
-            data = pd.concat([data, new_row])
+            new_row = pd.DataFrame([d]);
+            data = pd.read_csv("db.csv");
+            if data.empty:
+                data = new_row.copy();
+            else:
+                data = pd.concat([data, new_row])
             data.to_csv("db.csv", index=False)
 
             click.echo(click.style(f"\nUpdated", fg='green'));

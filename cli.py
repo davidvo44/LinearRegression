@@ -41,7 +41,7 @@ def estimation():
     mileage = click.prompt("Enter Mileage", type = float);
     estimatePrice = mileage * tetha1 + tetha0;
     click.echo(click.style(f"\nEstimate Price for the car is: {estimatePrice}", fg='green'));
-    time.sleep(1);
+    time.sleep(0.5);
 
 def selectMenu():
     return inquirer.select(
@@ -79,32 +79,6 @@ def createGraph():
         click.echo("\nerror");
         return;
 
-def UpdateTheta1():
-    global tetha1;
-    data = pd.read_csv("db.csv");
-    sumXY = (data["price"] * data["km"]).sum();
-    sumX = data["km"].sum();
-    sumY = data["price"].sum();
-    sumXX = (data["km"] * data["km"]).sum();
-    linesNB = data["km"].count();
-    if linesNB == 0:
-        return;
-    tetha1 =  (linesNB * sumXY - sumX * sumY) / (linesNB * sumXX - (sumX * sumX));
-
-def UpdateTheta0V2():
-    global tetha1;
-    global tetha0;
-    global learningRate;
-
-    data = pd.read_csv("db.csv");
-    linesNB = data["km"].count();
-
-    click.echo(click.style(f"\nYOOOO", fg='green'));
-
-    oldVal = tetha0;
-    sumMarginPrice = ((data["km"] * tetha1 + oldVal - data["price"])).sum();
-    tetha0 = oldVal - (learningRate * (1/linesNB) * sumMarginPrice);
-    click.echo(click.style(f"\nEstimate Price : {sumMarginPrice, tetha0}", fg='green'));
 
 # normalized_value = (value - min) / (max - min)
 
@@ -126,7 +100,7 @@ def UpdateTheta():
     nTetha1 = tetha1 * (km.max() - km.min()) / (price.max() - price.min());
     nTetha0 = (tetha0 - price.min()) / (price.max() - price.min()) + (nTetha1 * km.min()) / (km.max() - km.min());
 
-    click.echo(click.style(f"\nEstimate Price before : {nTetha1, nTetha0}", fg='green'));
+    # click.echo(click.style(f"\nEstimate Price before : {nTetha1, nTetha0}", fg='green'));
 
     for i in range(1000000):
         oldVal0 = nTetha0;
@@ -142,21 +116,11 @@ def UpdateTheta():
             break;
     tetha1 = (price.max() - price.min()) * nTetha1 / (km.max() - km.min());
     tetha0 = price.min() + (price.max() - price.min()) * (nTetha0 - nTetha1 * km.min() / (km.max() - km.min()));
-    click.echo(click.style(f"\nEstimate Price : {nTetha1, nTetha0}", fg='green'));
+    click.echo(click.style(f"\nTheta is Updated", fg='green'));
+    time.sleep(0.5);
 
 # A = (maxPrice - minPrice) * theta1 / (maxKm - minKm)
 # B = minPrice + (maxPrice - minPrice) * (theta0 - theta1 * minKm / (maxKm - minKm))
-
-def UpdateTheta0():
-    global tetha0;
-    data = pd.read_csv("db.csv");
-    sumX = data["km"].sum();
-    sumY = data["price"].sum();
-    linesNB = data["km"].count();
-    if linesNB == 0:
-        return;
-    tetha0 = (sumY - tetha1 * sumX) / linesNB;
-    time.sleep(1);
 
 
 if __name__ == '__main__':
