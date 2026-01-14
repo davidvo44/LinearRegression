@@ -27,7 +27,7 @@ def main():
                 createGraph()
             elif choice == "Quit":
                 break
-            UpdateTheta1V2();
+            UpdateTheta();
     except KeyboardInterrupt:
         print("\n...Leaving....");
     except click.exceptions.Abort:
@@ -108,7 +108,7 @@ def UpdateTheta0V2():
 
 # normalized_value = (value - min) / (max - min)
 
-def UpdateTheta1V2():
+def UpdateTheta():
     global tetha1;
     global tetha0;
     global learningRate;
@@ -123,30 +123,26 @@ def UpdateTheta1V2():
     normKm = (km - km.min()) / (km.max() - km.min());
     normPrice = (price - price.min()) / (price.max() - price.min());
     
-    oldVal0 = tetha0;
-    oldVal1 = tetha1;
+    nTetha1 = tetha1 * (km.max() - km.min()) / (price.max() - price.min());
+    nTetha0 = (tetha0 - price.min()) / (price.max() - price.min()) + (nTetha1 * km.min()) / (km.max() - km.min());
 
-    tetha1 = oldVal1 * (km.max() - km.min()) / (price.max() - price.min());
-    tetha0 = (oldVal0 - price.min()) / (price.max() - price.min()) + oldVal1 * (km.min() / (km.max() - km.min()));
+    click.echo(click.style(f"\nEstimate Price before : {nTetha1, nTetha0}", fg='green'));
+
     for i in range(1000000):
-        oldVal0 = tetha0;
-        oldVal1 = tetha1;
+        oldVal0 = nTetha0;
+        oldVal1 = nTetha1;
 
         sumMarginPriceTheta0 = ((normKm * oldVal1 + oldVal0 - normPrice)).sum();
-        tetha0 = oldVal0 - (learningRate * (1/linesNB) * sumMarginPriceTheta0);
+        nTetha0 = oldVal0 - (learningRate * (1/linesNB) * sumMarginPriceTheta0);
 
         sumMarginPriceTheta1 = ((normKm * oldVal1 + oldVal0 - normPrice) * normKm).sum();
-        tetha1 = oldVal1 - (learningRate * (1/linesNB) * sumMarginPriceTheta1);
+        nTetha1 = oldVal1 - (learningRate * (1/linesNB) * sumMarginPriceTheta1);
 
-        heyhey1 = (price.max() - price.min()) * tetha1 / (km.max() - km.min());
-        heyhey = price.min() + (price.max() - price.min()) * (tetha0 - tetha1 * km.min() / (km.max() - km.min()))
-        click.echo(click.style(f"\nEstimate Price : {tetha1 - oldVal1, tetha0 - oldVal0}", fg='green'));
-        if abs(tetha1 - oldVal1) < 0.001 and abs(tetha0 - oldVal0) < 0.001:
+        if abs(nTetha1 - oldVal1) < 0.00001 and abs(nTetha0 - oldVal0) < 0.00001:
             break;
-    oldVal0 = tetha0;
-    oldVal1 = tetha1;
-    tetha1 = (price.max() - price.min()) * oldVal1 / (km.max() - km.min());
-    tetha0 = price.min() + (price.max() - price.min()) * (oldVal0 - oldVal1 * km.min() / (km.max() - km.min()));
+    tetha1 = (price.max() - price.min()) * nTetha1 / (km.max() - km.min());
+    tetha0 = price.min() + (price.max() - price.min()) * (nTetha0 - nTetha1 * km.min() / (km.max() - km.min()));
+    click.echo(click.style(f"\nEstimate Price : {nTetha1, nTetha0}", fg='green'));
 
 # A = (maxPrice - minPrice) * theta1 / (maxKm - minKm)
 # B = minPrice + (maxPrice - minPrice) * (theta0 - theta1 * minKm / (maxKm - minKm))
@@ -165,4 +161,3 @@ def UpdateTheta0():
 
 if __name__ == '__main__':
     main()
-
