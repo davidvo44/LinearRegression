@@ -2,7 +2,7 @@ VENV = .venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
-run: $(VENV)/bin/activate
+all: $(VENV)/bin/activate
 	$(PYTHON) app.py
 
 
@@ -15,6 +15,6 @@ clean:
 	rm -rf __pycache__
 	rm -rf $(VENV)
 
-re : fclean all
+re : clean all
 
 .PHONE: all clean run re
