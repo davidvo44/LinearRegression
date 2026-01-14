@@ -14,3 +14,7 @@ $(VENV)/bin/activate: requirements.txt
 clean:
 	rm -rf __pycache__
 	rm -rf $(VENV)
+
+re : fclean all
+
+.PHONE: all clean run re
